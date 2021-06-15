@@ -1,9 +1,10 @@
 import numpy as np
+from numpy.linalg import norm
 
 cameraCor = np.array([0, 0, 4])
 
 def normalize(vector):
-	return vector/np.linalg.norm(vector)
+	return vector/norm(vector)
 
 def getPixelData(width, height):
 	xCor = np.linspace(-1, 1, width)

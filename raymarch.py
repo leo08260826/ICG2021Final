@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import norm
 
 ### parameter of ray marching
 MaximumRaySteps = 10
@@ -7,7 +8,7 @@ MinimumDistance = 0.01
 def DistanceEstimator(point):
 	point[0] = point[0]%1.0 - 0.5
 	point[1] = point[1]%1.0 - 0.5
-	return np.linalg.norm(point)-0.3
+	return norm(point)-0.3
 
 def rayMarching(pixel, direction):
 	totalDistance = 0.0

@@ -1,7 +1,9 @@
 import pygame
 import numpy as np
 import camera
-import raymarch
+from raymarch import rayMarching
+
+import datetime
 
 ### para of settings
 SCREEN_HEIGHT = 300
@@ -22,6 +24,7 @@ if __name__ == '__main__':
 	### start game loop
 	clock = pygame.time.Clock()
 	flag = True # for now, only render once
+	starttime = datetime.datetime.now() # counting time
 	while True:
 		clock.tick(FPS)
 
@@ -33,12 +36,14 @@ if __name__ == '__main__':
 		if flag == True:
 			for i in range(SCREEN_WIDTH):
 				for j in range(SCREEN_HEIGHT):
-					image[i][j] = raymarch.rayMarching(pixelCor[i][j], direction[i][j])
+					image[i][j] = rayMarching(pixelCor[i][j], direction[i][j])
 		
 			imageSurf = pygame.surfarray.make_surface(image)
 			display_surface.blit(imageSurf, (0, 0))
 			pygame.display.update()
 
 			flag=False
+			endtime = datetime.datetime.now()
+			print((endtime - starttime).seconds)
 
 		
