@@ -20,7 +20,6 @@ def getPixelData(width, height):
 
 	data = []
 	append = data.append
-
 	for x in xCor:
 		for y in yCor:
 			pixelCor = array([x, y, zCor])

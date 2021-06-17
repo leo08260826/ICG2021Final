@@ -5,7 +5,6 @@ import numpy as np
 import camera
 from raymarch import rayMarching
 import multiprocessing
-
 import datetime
 
 ### para of settings
