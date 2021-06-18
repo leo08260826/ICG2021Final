@@ -14,11 +14,6 @@ def DE_inf_ball(point):
 	return norm(point)-0.3
 
 @jit(nopython=True, nogil=True)
-def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
-	pixel = array([pixelx, pixely, pixelz])
-	direction = array([directionx, directiony, directionz])
-
-@jit(nopython=True, nogil=True)
 def DE_tetrahedron(point):
 	iteration = 10
 	scale = 2.0
@@ -43,12 +38,15 @@ def DE_tetrahedron(point):
 # 	if i == 4: return np.array([t, p, v])
 # 	if i == 5: return np.array([v, p, q])
 
+
 @jit(nopython=True, nogil=True)
-def rayMarching(pixel, direction, object_type='tetrahedron'):
-	if object_type == 'tetrahedron':
-		DistanceEstimator = DE_tetrahedron
-	else:
-		DistanceEstimator = DE_inf_ball
+def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
+	pixel = array([pixelx, pixely, pixelz])
+	direction = array([directionx, directiony, directionz])
+
+	### choose DE
+	DistanceEstimator = DE_tetrahedron
+	# DistanceEstimator = DE_inf_ball
   
 	totalDistance = 0.0
 	steps = 0
