@@ -8,8 +8,8 @@ import multiprocessing
 import datetime
 
 ### para of settings
-SCREEN_HEIGHT = 720
-SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 300
+SCREEN_WIDTH = 400
 FPS = 5
 
 if __name__ == '__main__':
