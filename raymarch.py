@@ -96,9 +96,7 @@ def normal_inf_ball(point):
 
 ### main function
 @jit(nopython=True, nogil=True)
-def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
-	pixel = np.array([pixelx, pixely, pixelz])
-	direction = np.array([directionx, directiony, directionz])
+def rayMarching(pixel, dir):
 
 	### choose DE
 	DE = lambda point: DE_balls(point, 1.0, 0.3)
@@ -106,11 +104,11 @@ def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
 	totalDistance = 0.0
 	steps = 0
 	distance = 0
-	p = np.array(pixel)
+	point = np.array(pixel)
 	for steps in range(0, MAX_STEP):
-		distance = DE(p)
+		distance = DE(point)
 		totalDistance += distance
-		p = pixel + totalDistance * direction
+		point = pixel + totalDistance * dir
 		if(distance < MIN_DIST):
 			break
 
@@ -118,9 +116,9 @@ def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
 	if steps >= (MAX_STEP - 1): return O
 	steps_inter = steps + distance / MIN_DIST
 
-	N = normal_inf_ball(p)
-	if np.dot(N, p - CAM_POS) > 0: N = -N
-	p2light = L_POS - p
+	N = normal_inf_ball(point)
+	if np.dot(N, point - CAM_POS) > 0: N = -N
+	p2light = L_POS - point
 	lightDistSq = np.dot(p2light, p2light)
 	intensity = L_ITEN / lightDistSq
 
@@ -131,7 +129,7 @@ def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
 	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
 	dif = amb_color * dif_ratio * intensity
 
-	spc_dir = unit(p2light) - unit(p - CAM_POS)
+	spc_dir = unit(p2light) - unit(point - CAM_POS)
 	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
 	spc = WHITE * pow(spc_ratio, SPC_P) * intensity
 

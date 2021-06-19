@@ -24,6 +24,6 @@ def getPixelData(width, height):
 		for y in yCor:
 			pixelCor = array([x, y, zCor])
 			direction = normalize(pixelCor - cameraCor)
-			append((x,y,zCor,direction[0],direction[1],direction[2]))
+			append((pixelCor, direction))
 
 	return data

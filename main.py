@@ -5,30 +5,38 @@ import numpy as np
 import camera
 from raymarch import rayMarching
 import multiprocessing
-import datetime
+from datetime import datetime as Time
 
 ### para of settings
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+WIDTH = 1280
+HEIGHT = 720
 FPS = 5
+
+def strTime(time):
+	return str(time.total_seconds()) + ' s'
+
 
 if __name__ == '__main__':
 	### init pygame
 	pygame.init()
-	display_surface = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
+	display_surface = pygame.display.set_mode((WIDTH, HEIGHT))
 	pygame.display.set_caption("Fractal Rendering")
 
 	### init multiprocessing
 	cpus = multiprocessing.cpu_count()
-	pool = multiprocessing.Pool(cpus)
-	print("CPU nums: " + str(cpus))
+	used_cpus = cpus // 2 + 1
+	pool = multiprocessing.Pool(used_cpus)
+	print()
+	print("Found " + str(cpus) + " CPU core(s).")
+	print("Using " + str(used_cpus) + " CPU core(s).")
 	print("FPS: " + str(FPS))
 
 	### init data of every pixel of image
-	starttime = datetime.datetime.now()
-	pixelData = camera.getPixelData(SCREEN_WIDTH, SCREEN_HEIGHT)
-	endtime = datetime.datetime.now()
-	print("finish init. (time: " + str((endtime - starttime).seconds) + "s)")
+	startTime = Time.now()
+	pixelData = camera.getPixelData(WIDTH, HEIGHT)
+	endTime = Time.now()
+	print()
+	print("Camera Initialized in " + strTime(endTime - startTime) + " .")
 
 	### start game loop
 	clock = pygame.time.Clock()
@@ -41,17 +49,18 @@ if __name__ == '__main__':
 				quit()
 
 		if flag == True:
-			starttime = datetime.datetime.now() # counting time	
+			starttime = Time.now() # counting time	
 			results = pool.starmap(rayMarching, pixelData)
-			image = np.array(results).reshape(SCREEN_WIDTH, SCREEN_HEIGHT, 3)
+			image = np.array(results).reshape(WIDTH, HEIGHT, 3)
+			endtime = Time.now()	
+			print("Ray Marching done in " + strTime(endtime - starttime) + " .")
+			print("Average time per 10000 pixel : " + strTime((endtime - starttime) / WIDTH / HEIGHT * 10000))
 
 			imageSurf = pygame.surfarray.make_surface(image)
 			display_surface.blit(imageSurf, (0, 0))
 			pygame.display.update()
 
 			flag=False
-			endtime = datetime.datetime.now()	
-			print("image time: " + str((endtime - starttime).seconds))
 
 		clock.tick(FPS)
 
