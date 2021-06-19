@@ -1,60 +1,86 @@
-from math import pow
-from numpy import array, copy, dot, where
-from numpy.linalg import norm
+from math import pow, sqrt
 import numpy as np
+from numpy.linalg import norm as vecLen
 from numba import jit
 
 ### numba bug workaround
 from numba import types
 from numba.extending import overload
 
-@overload(array)
+@overload(np.array)
 def np_array_ol(x):
 	if isinstance(x, types.Array):
 		def impl(x):
-			return copy(x)
+			return np.copy(x)
 		return impl
 
-### parameter of ray marching
-MaximumRaySteps = 128
-MinimumDistance = 0.01
+### constants
+ux = np.array([1.0, 0.0, 0.0])
+uy = np.array([0.0, 1.0, 0.0])
+uz = np.array([0.0, 0.0, 1.0])
+O = np.array([0.0, 0.0, 0.0])
+I = np.array([1.0, 1.0, 1.0])
+WHITE = np.array([255.0, 255.0, 255.0])
 
-### light source
-lightPos = array([10, 10, 10])
-lightIntensity = 300
+### parameters
+MAX_STEP = 16
+MIN_DIST = 0.001
 
+CAM_POS = np.array([0.0, 0.0, 4.0])
+
+L_POS = np.array([10.0, 10.0, 10.0])
+L_ITEN = 300.0
+
+AMB_I = 0.1
+AMB_R = 0.05
+DIF_R = 1.0
+SPC_R = 0.2
+SPC_P = 8.0
+
+### utilities
 @jit(nopython=True, nogil=True)
-def normalize(vec):
-	return vec / norm(vec)
+def unit(vec): return vec / vecLen(vec)
 
-### Different Fractals have different DE and Normal functions!!!
+### Fractals DE
 @jit(nopython=True, nogil=True)
-def DistanceEstimator(point):
-	dist = array(point)
-	dist[0] = point[0] % 1.0 - 0.5
-	dist[1] = point[1] % 1.0 - 0.5
-	return norm(dist) - 0.3
+def DE_balls(point, space, radius):
+	dist = point % space - space / 2
+	dist[2] = point[2]
+	return vecLen(dist) - radius
 
-@jit(nopython=True, nogil=True)
-def findNormal(point):
-	N = array(point)
-	N[0] = point[0] % 1.0 - 0.5
-	N[1] = point[1] % 1.0 - 0.5
-	return normalize(N)
-
-### main function
 @jit(nopython=True, nogil=True)
 def DE_tetrahedron(point):
-	iteration = 10
+	iter = 5
 	scale = 2.0
-	reflect_normals = np.array([[1,1,0],[1,0,1],[0,1,1]]) / np.sqrt(2)
+	reflect_n = np.array([[1,1,0],[1,0,1],[0,1,1]]) / sqrt(2)
 	offset = np.array([1,1,1])
-	for _ in range(iteration):
-		point -= 2.0 * min(0.0, np.dot(point, reflect_normals[0])) * reflect_normals[0]
-		point -= 2.0 * min(0.0, np.dot(point, reflect_normals[1])) * reflect_normals[1]
-		point -= 2.0 * min(0.0, np.dot(point, reflect_normals[2])) * reflect_normals[2]
-		point = point * scale - offset * (scale - 1.0)
-	return np.linalg.norm(point) * pow(scale, float(-iteration))
+	for _ in range(iter):
+		point -= 2.0 * min(0.0, np.dot(point, reflect_n[0])) * reflect_n[0]
+		point -= 2.0 * min(0.0, np.dot(point, reflect_n[1])) * reflect_n[1]
+		point -= 2.0 * min(0.0, np.dot(point, reflect_n[2])) * reflect_n[2]
+		point = (point - offset) * scale
+	return vecLen(point) * pow(scale, float(-iter))
+
+### general normal function
+# @jit(nopython=True, nogil=True)
+# def findNormal(point, DE):
+# 	d = MIN_DIST / 2
+# 	dx = ux * d
+# 	dy = uy * d
+# 	dz = uz * d
+# 	return unit(np.array([
+# 		DE(point + dx) - DE(point - dx),
+# 		DE(point + dy) - DE(point - dy),
+# 		DE(point + dz) - DE(point - dz)
+# 	]))
+
+# fast normal finder for balls
+@jit(nopython=True, nogil=True)
+def normal_inf_ball(point):
+	N = np.array(point)
+	N[0] = point[0] % 1.0 - 0.5
+	N[1] = point[1] % 1.0 - 0.5
+	return unit(N)
 
 # @jit(nopython=True, nogil=True)
 # def hsv_to_rgb(h, s, v):
@@ -68,50 +94,48 @@ def DE_tetrahedron(point):
 # 	if i == 4: return np.array([t, p, v])
 # 	if i == 5: return np.array([v, p, q])
 
-
+### main function
 @jit(nopython=True, nogil=True)
 def rayMarching(pixelx, pixely, pixelz, directionx, directiony, directionz):
-	pixel = array([pixelx, pixely, pixelz])
-	direction = array([directionx, directiony, directionz])
+	pixel = np.array([pixelx, pixely, pixelz])
+	direction = np.array([directionx, directiony, directionz])
 
 	### choose DE
-	DistanceEstimator = DE_tetrahedron
-	# DistanceEstimator = DE_inf_ball
-  
+	DE = lambda point: DE_balls(point, 1.0, 0.3)
+
 	totalDistance = 0.0
 	steps = 0
 	distance = 0
-	p = array(pixel)
-	for steps in range(0, MaximumRaySteps):
-		distance = DistanceEstimator(p)
+	p = np.array(pixel)
+	for steps in range(0, MAX_STEP):
+		distance = DE(p)
 		totalDistance += distance
 		p = pixel + totalDistance * direction
-		if(distance < MinimumDistance):
+		if(distance < MIN_DIST):
 			break
 
 	### render color
-	if steps >= MaximumRaySteps: return array([0.0, 0.0, 0.0])
-	steps_inter = steps + distance / MinimumDistance
+	if steps >= (MAX_STEP - 1): return O
+	steps_inter = steps + distance / MIN_DIST
 
-	amb_color = array([255, 255, 255])
-	amb_brightness = 0.1
-	amb_occ = pow(2, -float(steps_inter)/float(MaximumRaySteps - 1) / amb_brightness)
+	N = normal_inf_ball(p)
+	if np.dot(N, p - CAM_POS) > 0: N = -N
+	p2light = L_POS - p
+	lightDistSq = np.dot(p2light, p2light)
+	intensity = L_ITEN / lightDistSq
+
+	amb_color = WHITE
+	amb_occ = pow(2, -float(steps_inter)/float(MAX_STEP - 1) / AMB_I)
 	amb = amb_color * amb_occ
 
-	N = findNormal(p)
-	p2light = lightPos - p
-	lightDistSq = dot(p2light, p2light)
-	intensity = lightIntensity / lightDistSq
+	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
+	dif = amb_color * dif_ratio * intensity
 
-	dif_ratio = max(dot(N, normalize(p2light)), 0.0)
-	dif = amb * dif_ratio * intensity
+	spc_dir = unit(p2light) - unit(p - CAM_POS)
+	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
+	spc = WHITE * pow(spc_ratio, SPC_P) * intensity
 
-	spc_dir = normalize(p2light) - normalize(p - array([0, 0, 4]))
-	spc_ratio = max(dot(N, normalize(spc_dir)), 0.0)
-	spc = array([255, 255, 255]) * pow(spc_ratio, 8) * intensity
-
-	renderColor = dif * 0.05 + dif + spc * .2
-	renderColor = where(renderColor > 255, 255, renderColor)
-	renderColor = where(renderColor < 0, 0, renderColor)
-
-	return array(renderColor)
+	renderColor = amb * AMB_R + dif * DIF_R + spc * SPC_R
+	renderColor = np.where(renderColor > 255, 255, renderColor)
+	renderColor = np.where(renderColor < 0, 0, renderColor)
+	return renderColor
