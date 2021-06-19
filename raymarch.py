@@ -97,7 +97,8 @@ def rayMarching(pixel, dir):
 
 	### params
 	N = normal_inf_ball(point, 1.0)
-	if np.dot(N, point - CAM_POS) > 0: N = -N
+	# check if normal faces camera, if not then reverse
+	# if np.dot(N, point - CAM_POS) > 0: N = -N
 	p2light = L_POS - point
 	lightDistSq = np.dot(p2light, p2light)
 	intensity = L_ITEN / lightDistSq

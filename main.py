@@ -4,7 +4,7 @@ import multiprocessing
 
 from datetime import datetime as Time
 
-import numpy as np
+from numpy import array
 import pygame
 import cv2
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 		if flag == True:
 			starttime = Time.now() # counting time	
 			results = pool.starmap(rayMarching, pixelData)
-			image = np.array(results).reshape(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE, 3)
+			image = array(results).reshape(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE, 3)
 			if RAYS_SCALE != 1:
 				image = cv2.resize(image, dsize=(HEIGHT, WIDTH))
 			endtime = Time.now()	
