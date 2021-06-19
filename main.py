@@ -1,20 +1,19 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import pygame
-import numpy as np
-import camera
-from raymarch import rayMarching
 import multiprocessing
+
 from datetime import datetime as Time
 
-### para of settings
-WIDTH = 1280
-HEIGHT = 720
-FPS = 5
+import numpy as np
+import pygame
+
+from camera import getPixelData
+from raymarch import rayMarching
+
+from params import *
 
 def strTime(time):
 	return str(time.total_seconds()) + ' s'
-
 
 if __name__ == '__main__':
 	### init pygame
@@ -33,7 +32,7 @@ if __name__ == '__main__':
 
 	### init data of every pixel of image
 	startTime = Time.now()
-	pixelData = camera.getPixelData(WIDTH, HEIGHT)
+	pixelData = getPixelData(WIDTH, HEIGHT)
 	endTime = Time.now()
 	print()
 	print("Camera Initialized in " + strTime(endTime - startTime) + " .")

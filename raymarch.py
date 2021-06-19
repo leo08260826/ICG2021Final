@@ -1,4 +1,5 @@
 from math import pow, sqrt
+
 import numpy as np
 from numpy.linalg import norm as vecLen
 from numba import jit
@@ -14,32 +15,9 @@ def np_array_ol(x):
 			return np.copy(x)
 		return impl
 
-### constants
-ux = np.array([1.0, 0.0, 0.0])
-uy = np.array([0.0, 1.0, 0.0])
-uz = np.array([0.0, 0.0, 1.0])
-O = np.array([0.0, 0.0, 0.0])
-I = np.array([1.0, 1.0, 1.0])
-WHITE = np.array([255.0, 255.0, 255.0])
-
-### parameters
-MAX_STEP = 16
-MIN_DIST = 0.001
-
-CAM_POS = np.array([0.0, 0.0, 4.0])
-
-L_POS = np.array([10.0, 10.0, 10.0])
-L_ITEN = 300.0
-
-AMB_I = 0.1
-AMB_R = 0.05
-DIF_R = 1.0
-SPC_R = 0.2
-SPC_P = 8.0
-
-### utilities
-@jit(nopython=True, nogil=True)
-def unit(vec): return vec / vecLen(vec)
+### params and uitls
+from params import *
+from util import *
 
 ### Fractals DE
 @jit(nopython=True, nogil=True)
@@ -52,8 +30,8 @@ def DE_balls(point, space, radius):
 def DE_tetrahedron(point):
 	iter = 5
 	scale = 2.0
-	reflect_n = np.array([[1,1,0],[1,0,1],[0,1,1]]) / sqrt(2)
-	offset = np.array([1,1,1])
+	reflect_n = np.array([UX + UY, UY + UZ, UX + UZ]) / sqrt(2)
+	offset = I
 	for _ in range(iter):
 		point -= 2.0 * min(0.0, np.dot(point, reflect_n[0])) * reflect_n[0]
 		point -= 2.0 * min(0.0, np.dot(point, reflect_n[1])) * reflect_n[1]
@@ -65,16 +43,16 @@ def DE_tetrahedron(point):
 # @jit(nopython=True, nogil=True)
 # def findNormal(point, DE):
 # 	d = MIN_DIST / 2
-# 	dx = ux * d
-# 	dy = uy * d
-# 	dz = uz * d
+# 	dx = UX * d
+# 	dy = UY * d
+# 	dz = UZ * d
 # 	return unit(np.array([
 # 		DE(point + dx) - DE(point - dx),
 # 		DE(point + dy) - DE(point - dy),
 # 		DE(point + dz) - DE(point - dz)
 # 	]))
 
-# fast normal finder for balls
+### fast normal finder for balls
 @jit(nopython=True, nogil=True)
 def normal_inf_ball(point):
 	N = np.array(point)
@@ -82,6 +60,7 @@ def normal_inf_ball(point):
 	N[1] = point[1] % 1.0 - 0.5
 	return unit(N)
 
+### unused
 # @jit(nopython=True, nogil=True)
 # def hsv_to_rgb(h, s, v):
 # 	if s == 0.0: return np.array([v, v, v])
@@ -101,6 +80,7 @@ def rayMarching(pixel, dir):
 	### choose DE
 	DE = lambda point: DE_balls(point, 1.0, 0.3)
 
+	### march
 	totalDistance = 0.0
 	steps = 0
 	distance = 0
@@ -112,27 +92,32 @@ def rayMarching(pixel, dir):
 		if(distance < MIN_DIST):
 			break
 
-	### render color
+	### interpolate steps to smooth the color rendering
 	if steps >= (MAX_STEP - 1): return O
 	steps_inter = steps + distance / MIN_DIST
 
+	### params
 	N = normal_inf_ball(point)
 	if np.dot(N, point - CAM_POS) > 0: N = -N
 	p2light = L_POS - point
 	lightDistSq = np.dot(p2light, p2light)
 	intensity = L_ITEN / lightDistSq
 
+	### Ambient
 	amb_color = WHITE
 	amb_occ = pow(2, -float(steps_inter)/float(MAX_STEP - 1) / AMB_I)
 	amb = amb_color * amb_occ
 
+	### Diffusion
 	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
 	dif = amb_color * dif_ratio * intensity
 
+	### Specular
 	spc_dir = unit(p2light) - unit(point - CAM_POS)
 	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
 	spc = WHITE * pow(spc_ratio, SPC_P) * intensity
 
+	### combining
 	renderColor = amb * AMB_R + dif * DIF_R + spc * SPC_R
 	renderColor = np.where(renderColor > 255, 255, renderColor)
 	renderColor = np.where(renderColor < 0, 0, renderColor)
