@@ -23,7 +23,7 @@ from util import *
 @jit(nopython=True, nogil=True)
 def DE_balls(point, space, radius):
 	dist = point % space - space / 2
-	dist[2] = point[2]
+	# dist[2] = point[2]
 	return vecLen(dist) - radius
 
 @jit(nopython=True, nogil=True)
@@ -54,11 +54,10 @@ def DE_tetrahedron(point):
 
 ### fast normal finder for balls
 @jit(nopython=True, nogil=True)
-def normal_inf_ball(point):
-	N = np.array(point)
-	N[0] = point[0] % 1.0 - 0.5
-	N[1] = point[1] % 1.0 - 0.5
-	return unit(N)
+def normal_inf_ball(point, space):
+	dist = point % space - space / 2
+	# dist[2] = point[2]
+	return unit(dist)
 
 ### unused
 # @jit(nopython=True, nogil=True)
@@ -97,7 +96,7 @@ def rayMarching(pixel, dir):
 	steps_inter = steps + distance / MIN_DIST
 
 	### params
-	N = normal_inf_ball(point)
+	N = normal_inf_ball(point, 1.0)
 	if np.dot(N, point - CAM_POS) > 0: N = -N
 	p2light = L_POS - point
 	lightDistSq = np.dot(p2light, p2light)

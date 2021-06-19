@@ -1,22 +1,23 @@
-from numpy import array
-from numpy import linspace
-from numpy.linalg import norm
-from numba import jit
+import numpy as np
+from numpy.linalg import norm as vecLen
 
 from params import *
-from util import *
 
-@jit(nopython=True, nogil=True)
 def getPixelData(width, height):
-	xCor = linspace(-1, 1, width)
-	yCor = linspace(-1*height/width, 1*height/width, height)
-	zCor = 2
+	ratio = height / width
+	xCor = np.linspace(-1, 1, width)
+	yCor = np.linspace(-ratio, ratio, height)
 
-	data = []
-	for x in xCor:
-		for y in yCor:
-			pixelCor = array([x, y, zCor])
-			direction = unit(pixelCor - CAM_POS)
-			data.append((pixelCor, direction))
+	pixelCoors = np.zeros((width, height, 3))
+	pixelCoors[:,:,0] = xCor[:, np.newaxis]
+	pixelCoors[:,:,1] = yCor
+	pixelCoors[:,:,2] = 2
 
-	return data
+	direction = np.zeros((width, height, 3))
+	direction = pixelCoors - CAM_POS
+	direction = direction / vecLen(direction, axis=2)[:, :, np.newaxis]
+
+	pixelCoors.resize((width * height, 3))
+	direction .resize((width * height, 3))
+	result = list(zip(list(pixelCoors), list(direction)))
+	return result

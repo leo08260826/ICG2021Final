@@ -6,6 +6,7 @@ from datetime import datetime as Time
 
 import numpy as np
 import pygame
+import cv2
 
 from camera import getPixelData
 from raymarch import rayMarching
@@ -32,7 +33,7 @@ if __name__ == '__main__':
 
 	### init data of every pixel of image
 	startTime = Time.now()
-	pixelData = getPixelData(WIDTH, HEIGHT)
+	pixelData = getPixelData(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE)
 	endTime = Time.now()
 	print()
 	print("Camera Initialized in " + strTime(endTime - startTime) + " .")
@@ -50,10 +51,16 @@ if __name__ == '__main__':
 		if flag == True:
 			starttime = Time.now() # counting time	
 			results = pool.starmap(rayMarching, pixelData)
-			image = np.array(results).reshape(WIDTH, HEIGHT, 3)
+			image = np.array(results).reshape(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE, 3)
+			if RAYS_SCALE != 1:
+				image = cv2.resize(image, dsize=(HEIGHT, WIDTH))
 			endtime = Time.now()	
-			print("Ray Marching done in " + strTime(endtime - starttime) + " .")
-			print("Average time per 10000 pixel : " + strTime((endtime - starttime) / WIDTH / HEIGHT * 10000))
+			time = endtime - starttime
+			print("Ray Marching done in " + strTime(time) + " .")
+			print("Average time per 10000 pixels : " +
+				strTime(time / WIDTH / HEIGHT * 10000))
+			print("Average time per 10000 rays   : " +
+				strTime(time / WIDTH / HEIGHT / RAYS_SCALE / RAYS_SCALE * 10000))
 
 			imageSurf = pygame.surfarray.make_surface(image)
 			display_surface.blit(imageSurf, (0, 0))
