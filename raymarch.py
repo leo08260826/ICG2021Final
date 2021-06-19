@@ -5,7 +5,7 @@ import numpy as np
 from numba import jit
 
 ### parameter of ray marching
-MaximumRaySteps = 128
+MaximumRaySteps = 10
 MinimumDistance = 0.01
 
 @jit(nopython=True, nogil=True)
