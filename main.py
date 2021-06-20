@@ -1,10 +1,9 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import multiprocessing
 
 from datetime import datetime as Time
 
-from numpy import array
+from cupy import array
 import pygame
 import cv2
 
@@ -21,15 +20,6 @@ if __name__ == '__main__':
 	pygame.init()
 	display_surface = pygame.display.set_mode((WIDTH, HEIGHT))
 	pygame.display.set_caption("Fractal Rendering")
-
-	### init multiprocessing
-	cpus = multiprocessing.cpu_count()
-	used_cpus = cpus // 2 + 1
-	pool = multiprocessing.Pool(used_cpus)
-	print()
-	print("Found " + str(cpus) + " CPU core(s).")
-	print("Using " + str(used_cpus) + " CPU core(s).")
-	print("FPS: " + str(FPS))
 
 	### init data of every pixel of image
 	startTime = Time.now()
@@ -50,7 +40,7 @@ if __name__ == '__main__':
 
 		if flag == True:
 			starttime = Time.now() # counting time	
-			results = pool.starmap(rayMarching, pixelData)
+			results = rayMarching(pixelData)
 			image = array(results).reshape(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE, 3)
 			if RAYS_SCALE != 1:
 				image = cv2.resize(image, dsize=(HEIGHT, WIDTH))
@@ -62,12 +52,10 @@ if __name__ == '__main__':
 			print("Average time per 10000 rays   : " +
 				strTime(time / WIDTH / HEIGHT / RAYS_SCALE / RAYS_SCALE * 10000))
 
-			imageSurf = pygame.surfarray.make_surface(image)
+			imageSurf = pygame.surfarray.make_surface(image.get())
 			display_surface.blit(imageSurf, (0, 0))
 			pygame.display.update()
 
 			flag=False
 
 		clock.tick(FPS)
-
-		

@@ -1,11 +1,11 @@
-import numpy as np
+import cupy as np
 
 WIDTH = 1280
 HEIGHT = 720
 RAYS_SCALE = 1 # anti-aliasing
 FPS = 5
 
-MAX_STEP = 1024
+MAX_STEP = 256
 MIN_DIST = 1 / WIDTH
 
 CAM_POS = np.array([0.0, 0.0, 4.0])

@@ -1,5 +1,5 @@
-import numpy as np
-from numpy.linalg import norm as vecLen
+import cupy as np
+from cupy.linalg import norm as vecLen
 
 from params import *
 
@@ -17,7 +17,7 @@ def getPixelData(width, height):
 	direction = pixelCoors - CAM_POS
 	direction = direction / vecLen(direction, axis=2)[:, :, np.newaxis]
 
-	pixelCoors.resize((width * height, 3))
-	direction .resize((width * height, 3))
-	result = list(zip(list(pixelCoors), list(direction)))
-	return result
+	pixelCoors = np.resize(pixelCoors, (width * height, 3))
+	direction  = np.resize(direction , (width * height, 3))
+
+	return [pixelCoors, direction]

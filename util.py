@@ -1,6 +1,5 @@
-import numpy as np
-from numpy.linalg import norm
-from numba import jit
+import cupy as np
+from cupy.linalg import norm
 
 ### constants
 UX = np.array([1.0, 0.0, 0.0])
@@ -11,5 +10,4 @@ I = np.array([1.0, 1.0, 1.0])
 WHITE = np.array([255.0, 255.0, 255.0])
 
 ### utilities
-@jit(nopython=True, nogil=True)
-def unit(vec): return vec / norm(vec)
+def unit(vec): return vec / norm(vec, axis=-1)[:, np.newaxis]

@@ -1,32 +1,18 @@
 from math import pow, sqrt
 
-import numpy as np
-from numpy.linalg import norm as vecLen
-from numba import jit
-
-### numba bug workaround
-from numba import types
-from numba.extending import overload
-
-@overload(np.array)
-def np_array_ol(x):
-	if isinstance(x, types.Array):
-		def impl(x):
-			return np.copy(x)
-		return impl
+import cupy as np
+from cupy.linalg import norm as vecLen
 
 ### params and uitls
 from params import *
 from util import *
 
 ### Fractals DE
-@jit(nopython=True, nogil=True)
 def DE_balls(point, space, radius):
 	dist = point % space - space / 2
 	# dist[2] = point[2]
-	return vecLen(dist) - radius
+	return vecLen(dist, axis = -1) - radius
 
-@jit(nopython=True, nogil=True)
 def DE_tetrahedron(point):
 	iter = 5
 	scale = 2.0
@@ -40,7 +26,6 @@ def DE_tetrahedron(point):
 	return vecLen(point) * pow(scale, float(-iter))
 
 ### general normal function
-# @jit(nopython=True, nogil=True)
 # def findNormal(point, DE):
 # 	d = MIN_DIST / 2
 # 	dx = UX * d
@@ -53,14 +38,12 @@ def DE_tetrahedron(point):
 # 	]))
 
 ### fast normal finder for balls
-@jit(nopython=True, nogil=True)
 def normal_inf_ball(point, space):
 	dist = point % space - space / 2
 	# dist[2] = point[2]
 	return unit(dist)
 
 ### unused
-# @jit(nopython=True, nogil=True)
 # def hsv_to_rgb(h, s, v):
 # 	if s == 0.0: return np.array([v, v, v])
 # 	i = int(h*6.) # XXX assume int() truncates!
@@ -73,49 +56,52 @@ def normal_inf_ball(point, space):
 # 	if i == 5: return np.array([v, p, q])
 
 ### main function
-@jit(nopython=True, nogil=True)
-def rayMarching(pixel, dir):
+def rayMarching(pixelData):
+	[pixel, dir] = pixelData
 
 	### choose DE
 	DE = lambda point: DE_balls(point, 1.0, 0.3)
 
 	### march
 	totalDistance = 0.0
-	steps = 0
 	distance = 0
 	point = np.array(pixel)
-	for steps in range(0, MAX_STEP):
-		distance = DE(point)
-		totalDistance += distance
-		point = pixel + totalDistance * dir
-		if(distance < MIN_DIST):
+	step_arr = np.full(pixel.shape[0], 0)
+	activate = np.full(pixel.shape[0], True)
+	for _ in range(0, MAX_STEP):
+		distance = np.where(activate, DE(point), distance)
+		totalDistance += np.where(activate, distance, 0)
+		point = np.where(activate[:, np.newaxis], pixel + totalDistance[:, np.newaxis] * dir, point)
+		step_arr += np.where(activate, 1, 0)
+		activate = np.where(np.logical_and(activate, (distance >= MIN_DIST)), True, False)
+		if(not activate.any()):
 			break
 
 	### interpolate steps to smooth the color rendering
-	if steps >= (MAX_STEP - 1): return O
-	steps_inter = steps + distance / MIN_DIST
+	# if steps >= (MAX_STEP - 1): return O
+	steps_inter = step_arr + distance / MIN_DIST * 1.0
 
 	### params
 	N = normal_inf_ball(point, 1.0)
 	# check if normal faces camera, if not then reverse
 	# if np.dot(N, point - CAM_POS) > 0: N = -N
 	p2light = L_POS - point
-	lightDistSq = np.dot(p2light, p2light)
+	lightDistSq = np.einsum('ij,ij->i', p2light, p2light)
 	intensity = L_ITEN / lightDistSq
 
 	### Ambient
 	amb_color = WHITE
-	amb_occ = pow(2, -float(steps_inter)/float(MAX_STEP - 1) / AMB_I)
-	amb = amb_color * amb_occ
+	amb_occ = np.power(2, -steps_inter / float(MAX_STEP - 1) / AMB_I)
+	amb = amb_color * amb_occ[:, np.newaxis]
 
 	### Diffusion
-	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
-	dif = amb_color * dif_ratio * intensity
+	dif_ratio = np.maximum(np.einsum('ij,ij->i', N, unit(p2light)), 0.0)
+	dif = amb_color * dif_ratio[:, np.newaxis] * intensity[:, np.newaxis]
 
 	### Specular
 	spc_dir = unit(p2light) - unit(point - CAM_POS)
-	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
-	spc = WHITE * pow(spc_ratio, SPC_P) * intensity
+	spc_ratio = np.maximum(np.einsum('ij,ij->i', N, unit(spc_dir)), 0.0)
+	spc = WHITE * np.power(spc_ratio, SPC_P)[:, np.newaxis] * intensity[:, np.newaxis]
 
 	### combining
 	renderColor = amb * AMB_R + dif * DIF_R + spc * SPC_R
