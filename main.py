@@ -34,7 +34,7 @@ if __name__ == '__main__':
 	### ray marching
 	starttime = Time.now()
 	results = pool.starmap(rayMarching, pixelData)
-	endtime = Time.now()	
+	endtime = Time.now()
 	time = endtime - starttime
 	print("Ray Marching done in " + strTime(time) + " .")
 	print("Average time per 10000 pixels : " +
