@@ -1,11 +1,8 @@
-import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import multiprocessing
 
 from datetime import datetime as Time
 
 from numpy import array
-import pygame
 import cv2
 
 from camera import getPixelData
@@ -17,10 +14,6 @@ def strTime(time):
 	return str(time.total_seconds()) + ' s'
 
 if __name__ == '__main__':
-	### init pygame
-	pygame.init()
-	display_surface = pygame.display.set_mode((WIDTH, HEIGHT))
-	pygame.display.set_caption("Fractal Rendering")
 
 	### init multiprocessing
 	cpus = multiprocessing.cpu_count()
@@ -38,36 +31,22 @@ if __name__ == '__main__':
 	print()
 	print("Camera Initialized in " + strTime(endTime - startTime) + " .")
 
-	### start game loop
-	clock = pygame.time.Clock()
-	flag = True # for now, only render once
-	while True:
-		
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
-				quit()
+	### ray marching
+	starttime = Time.now()
+	results = pool.starmap(rayMarching, pixelData)
+	endtime = Time.now()	
+	time = endtime - starttime
+	print("Ray Marching done in " + strTime(time) + " .")
+	print("Average time per 10000 pixels : " +
+		strTime(time / WIDTH / HEIGHT * 10000))
+	print("Average time per 10000 rays   : " +
+		strTime(time / WIDTH / HEIGHT / RAYS_SCALE / RAYS_SCALE * 10000))
 
-		if flag == True:
-			starttime = Time.now() # counting time	
-			results = pool.starmap(rayMarching, pixelData)
-			image = array(results).reshape(WIDTH * RAYS_SCALE, HEIGHT * RAYS_SCALE, 3)
-			if RAYS_SCALE != 1:
-				image = cv2.resize(image, dsize=(HEIGHT, WIDTH))
-			endtime = Time.now()	
-			time = endtime - starttime
-			print("Ray Marching done in " + strTime(time) + " .")
-			print("Average time per 10000 pixels : " +
-				strTime(time / WIDTH / HEIGHT * 10000))
-			print("Average time per 10000 rays   : " +
-				strTime(time / WIDTH / HEIGHT / RAYS_SCALE / RAYS_SCALE * 10000))
-
-			imageSurf = pygame.surfarray.make_surface(image)
-			display_surface.blit(imageSurf, (0, 0))
-			pygame.display.update()
-
-			flag=False
-
-		clock.tick(FPS)
-
-		
+	### image showing / storing
+	image = array(results).reshape(HEIGHT * RAYS_SCALE, WIDTH * RAYS_SCALE, 3)
+	if RAYS_SCALE != 1:
+		image = cv2.resize(image, dsize=(WIDTH, HEIGHT))
+	# cv2.imshow('Fractal Rendering', image / 255)
+	# cv2.waitKey(0)
+	# cv2.destroyAllWindows()
+	cv2.imwrite('output.jpg', image)

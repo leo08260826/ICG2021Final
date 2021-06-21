@@ -8,12 +8,12 @@ def getPixelData(width, height):
 	xCor = np.linspace(-1, 1, width)
 	yCor = np.linspace(-ratio, ratio, height)
 
-	pixelCoors = np.zeros((width, height, 3))
-	pixelCoors[:,:,0] = xCor[:, np.newaxis]
-	pixelCoors[:,:,1] = yCor
+	pixelCoors = np.zeros((height, width, 3))
+	pixelCoors[:,:,0] = yCor[:, np.newaxis]
+	pixelCoors[:,:,1] = xCor
 	pixelCoors[:,:,2] = 2
 
-	direction = np.zeros((width, height, 3))
+	direction = np.zeros((height, width, 3))
 	direction = pixelCoors - CAM_POS
 	direction = direction / vecLen(direction, axis=2)[:, :, np.newaxis]
 
