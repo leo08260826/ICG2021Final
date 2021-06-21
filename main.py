@@ -1,3 +1,5 @@
+import sys
+sys.setrecursionlimit(1000000)
 import multiprocessing
 
 from datetime import datetime as Time
@@ -22,7 +24,6 @@ if __name__ == '__main__':
 	print()
 	print("Found " + str(cpus) + " CPU core(s).")
 	print("Using " + str(used_cpus) + " CPU core(s).")
-	print("FPS: " + str(FPS))
 
 	### init data of every pixel of image
 	startTime = Time.now()
@@ -44,9 +45,11 @@ if __name__ == '__main__':
 
 	### image showing / storing
 	image = array(results).reshape(HEIGHT * RAYS_SCALE, WIDTH * RAYS_SCALE, 3)
+	image = np.float32(image)
+	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 	if RAYS_SCALE != 1:
 		image = cv2.resize(image, dsize=(WIDTH, HEIGHT))
-	# cv2.imshow('Fractal Rendering', image / 255)
+	# cv2.imshow('Fractal Rendering', image)
 	# cv2.waitKey(0)
 	# cv2.destroyAllWindows()
-	cv2.imwrite('output.jpg', image)
+	cv2.imwrite('output.jpg', image * 255)

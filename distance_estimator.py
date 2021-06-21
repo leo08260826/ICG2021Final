@@ -1,14 +1,16 @@
 import numpy as np
-from util import *
+from numpy.linalg import norm as vecLen
+
 from numba import jit
+
+from util import *
 
 fractal_iteration = 3
 
 @jit(nopython=True, nogil=True)
 def inf_ball(point):
-	point[0] = point[0]%1.0 - 0.5
-	point[1] = point[1]%1.0 - 0.5
-	return np.linalg.norm(point)-0.3, np.array([225/255, 181/255, 115/255])
+	dist = point % 1.0 - 1.0 / 2
+	return vecLen(dist) - 0.3, np.array([225, 181, 115])/255.0
 
 # @jit(nopython=True, nogil=True)
 # def DE_balls(point, space, radius):

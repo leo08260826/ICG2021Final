@@ -1,4 +1,4 @@
-from math import pow, sqrt
+from math import pow
 
 import numpy as np
 from numpy.linalg import norm as vecLen
@@ -21,18 +21,9 @@ from util import *
 
 import distance_estimator as de
 
-LightPosition = np.array([10.0, 10.0, 10.0])
-LightColor = np.array([1.0, 1.0, 1.0])
-specular_exp = 8
-reflect_decay = 0.2
+reflect_decay = 0.5
 shadow_softness = 16
-
-w_occlusion = 0.7
 w_softshadow = 0.4
-
-w_ambient = 0.1
-w_diffuse = 0.5
-w_specular = 0.4
 
 ### general normal function
 # @jit(nopython=True, nogil=True)
@@ -49,8 +40,8 @@ w_specular = 0.4
 
 ### fast normal finder for balls
 @jit(nopython=True, nogil=True)
-def normal_inf_ball(point, space):
-	dist = point % space - space / 2
+def normal_inf_ball(point):
+	dist = point % 1.0 - 1.0 / 2
 	# dist[2] = point[2]
 	return unit(dist)
 
@@ -78,33 +69,26 @@ def background_color(d):
 	return np.array([172/255, 253/255, 240/255]) * w + np.array([62/255, 67/255, 218/255]) * (1-w)
 
 @jit(nopython=True, nogil=True)
-def ambient(obj_color):
-	return obj_color
+def occ(steps):
+	ratio = pow(2, -float(steps)/float(MAX_STEP - 1) / AMB_I)
+	return ratio
 
 @jit(nopython=True, nogil=True)
-def occlusion(obj_color, steps, distance):
-	steps_inter = steps + distance / MIN_DIST
-	occ_factor = pow(2, -float(steps_inter)/float(MAX_STEP - 1) / 0.1)
-	return occ_factor
+def dif(c, N, point):
+	p2light = L_POS - point
+	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
+	return c * dif_ratio
 
 @jit(nopython=True, nogil=True)
-def diffuse(obj_color, N, p):
-	L = LightPosition - p
-	intensity = LightColor.sum()/ 3 / np.square(np.linalg.norm(L))
-	L /= np.linalg.norm(L)
-	return LightColor * obj_color * max(np.dot(N, L), 0.0) #* intensity
-
-@jit(nopython=True, nogil=True)
-def specular(N, p, V):
-	L = LightPosition - p
-	intensity = LightColor.sum()/ 3 #/ np.square(np.linalg.norm(L))
-	L /= np.linalg.norm(L)
-	R = reflect_direction(N, L)
-	return LightColor * pow(max(np.dot(R, V), 0.0), specular_exp) #* intensity
+def spc(c, N, point):
+	spc_dir = unit(L_POS - point) - unit(point - CAM_POS)
+	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
+	spc_ratio = c * pow(spc_ratio, SPC_P)
+	return c * spc_ratio
 
 @jit(nopython=True, nogil=True)
 def softshadow(init, DE):
-	direction = LightPosition - init
+	direction = L_POS - init
 	direction /= np.linalg.norm(direction)
 	totalDistance = MIN_DIST # avoid division by zero
 	init += totalDistance * direction
@@ -120,8 +104,7 @@ def softshadow(init, DE):
 	return illum
 
 ### main function
-@jit(nopython=True, nogil=True)
-def rayMarching(pixel, dir, DE=de.inf_ball, reflect_count=10):
+def rayMarching(pixel, dir, debug, DE=de.tetrahedron_with_floor, reflect_count=7):
 
 	### choose DE
 	# DE = lambda point: DE_balls(point, 1.0, 0.3)
@@ -131,61 +114,40 @@ def rayMarching(pixel, dir, DE=de.inf_ball, reflect_count=10):
 	steps = 0
 	distance = 0
 	point = np.array(pixel)
+	color = BLACK
 	for steps in range(0, MAX_STEP):
 		# point = pixel + totalDistance * dir
-		distance, c_obj = DE(point)
+		distance, color = DE(point)
 		totalDistance += distance
 		point = pixel + totalDistance * dir
 		if(distance < MIN_DIST):
 			break
-
-	# c_ambient = ambient(c_obj)       
-	# c_diffuse = diffuse(c_obj, N, p)
-	# c_specular = specular(N, p, -direction)
-			
-	# f_occlusion = occlusion(c_obj, steps, distance) * w_occlusion + (1-w_occlusion)
-
-	# color = np.array([0.0, 0.0, 0.0])
-	# color += w_ambient * c_ambient * f_occlusion
-	# color += w_diffuse * c_diffuse * f_softshadow
-	# color += w_specular * c_specular * f_softshadow
 
 	### interpolate steps to smooth the color rendering
 	if steps >= (MAX_STEP - 1): return background_color(point)
 	steps_inter = steps + distance / MIN_DIST
 
 	### params
-	N = normal_inf_ball(point, 1.0)
+	N = normal(point, DE)
 	N = unit(N)
 	# check if normal faces camera, if not then reverse
 	# if np.dot(N, point - CAM_POS) > 0: N = -N
 	p2light = L_POS - point
 	lightDistSq = np.dot(p2light, p2light)
 	intensity = L_ITEN / lightDistSq
+	# softShadow_r = softshadow(point, DE) * w_softshadow + (1-w_softshadow)
+	softShadow_r = 1.0
 
-	### Ambient
-	amb_color = WHITE
-	amb_occ = pow(2, -float(steps_inter)/float(MAX_STEP - 1) / AMB_I)
-	amb = amb_color * amb_occ
+	renderColor = color * AMB_R * occ(steps_inter) * 1
+	renderColor += dif(color, N, point) * DIF_R * intensity * softShadow_r
+	renderColor += spc(color, N, point) * SPC_R * intensity * softShadow_r
 
-	### Diffusion
-	dif_ratio = max(np.dot(N, unit(p2light)), 0.0)
-	dif = amb_color * dif_ratio * intensity
+	if reflect_count > 0 and np.dot(N, -dir) > 0:
+		reflect_direct = reflect_direction(N, -dir)
+		reflect_p = point + reflect_direct * MIN_DIST * 2
+		reflect_color = rayMarching(reflect_p, reflect_direct, False, DE, reflect_count-1)
+		renderColor = (1 - reflect_decay) * renderColor + reflect_decay * reflect_color
 
-	### Specular
-	spc_dir = unit(p2light) - unit(point - CAM_POS)
-	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
-	spc = WHITE * pow(spc_ratio, SPC_P) * intensity
-
-	SOFT_SH = softshadow(point, DE) * w_softshadow + (1-w_softshadow)
-
-	### combining
-	renderColor = amb * AMB_R + dif * DIF_R * SOFT_SH + spc * SPC_R * SOFT_SH
-
-	# if reflect_count > 0 and np.dot(N, -dir) > 0:
-	# 	reflect_direct = reflect_direction(N, -dir)
-	# 	reflect_p = point + reflect_direct * MIN_DIST
-	# 	reflect_color = rayMarching(reflect_p, reflect_direct, DE, reflect_count-1)
-	# 	renderColor = (1-reflect_decay) * renderColor + reflect_decay * reflect_color
-
+	# return (N + 1) / 2.0
 	return renderColor
+	# return U * steps_inter / 256.0

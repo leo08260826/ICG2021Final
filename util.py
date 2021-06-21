@@ -3,12 +3,15 @@ from numpy.linalg import norm
 from numba import jit
 
 ### constants
+O = np.array([0.0, 0.0, 0.0])
 UX = np.array([1.0, 0.0, 0.0])
 UY = np.array([0.0, 1.0, 0.0])
 UZ = np.array([0.0, 0.0, 1.0])
-O = np.array([0.0, 0.0, 0.0])
-I = np.array([1.0, 1.0, 1.0])
-WHITE = np.array([255.0, 255.0, 255.0])
+U = np.array([1.0, 1.0, 1.0])
+I = np.array([UX, UY, UZ])
+
+WHITE = U
+BLACK = O
 
 ### utilities
 @jit(nopython=True, nogil=True)
