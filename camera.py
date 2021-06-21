@@ -1,23 +1,23 @@
 import numpy as np
+from utils import normalize, rotation_matrix
 
-cameraCor = np.array([0, 0, 4])
+def getPixelData(width, height, rotation = np.identity(3), translation = np.array([0,0,0])):
+	cameraCor = np.array([0.0, 0, 0])
+    
+	xCor = -2
+	yCor = np.linspace(-1, 1, width)
+	zCor = np.linspace(-1*height/width, 1*height/width, height)
 
-def normalize(vector):
-	return vector/np.linalg.norm(vector)
-
-def getPixelData(width, height):
-	xCor = np.linspace(-1, 1, width)
-	yCor = np.linspace(-1*height/width, 1*height/width, height)
-	zCor = 2
-
-	pixelCor = np.zeros((width, height, 3))
-	for i in range(width):
-		for j in range(height):
-			pixelCor[i][j] = np.array([xCor[i], yCor[j], zCor])
+	pixelCor = np.zeros((height, width, 3))
+	for i in range(height):
+		for j in range(width):
+			pixelCor[i][j] = np.array([xCor, yCor[j], zCor[height-1-i]])
 			
-	direction = np.zeros((width, height, 3))
-	for i in range(width):
-		for j in range(height):
-			direction[i][j] = normalize(pixelCor[i][j] - cameraCor);
+	direction = np.zeros((height, width,3))
+	for i in range(height):
+		for j in range(width):
+			direction[i][j] = rotation @ normalize(pixelCor[i][j] - cameraCor);
 
-	return pixelCor, direction
+	cameraCor = rotation @ cameraCor
+	cameraCor += translation
+	return cameraCor , direction
