@@ -10,20 +10,23 @@ UZ = np.array([0.0, 0.0, 1.0])
 U = np.array([1.0, 1.0, 1.0])
 I = np.array([UX, UY, UZ])
 
-WHITE = U
-BLACK = O
+WHITE = U * 255
+BLACK = O * 255
 
 ### utilities
 @jit(nopython=True, nogil=True)
 def unit(vec):
 	return vec / norm(vec)
 
+### using Tait–Bryan angles
 @jit(nopython=True, nogil=True)
-def Rmat(x, y, z):
-	Rx = np.array([[1.0, 0.0, 0.0], [0, np.cos(x), -np.sin(x)], [0, np.sin(x), np.cos(x)]])
-	Ry = np.array([[np.cos(y), 0, np.sin(y)], [0.0, 1.0, 0.0], [-np.sin(y), 0, np.cos(y)]])
-	Rz = np.array([[np.cos(z), -np.sin(z), 0], [np.sin(z), np.cos(z), 0], [0.0, 0.0, 1.0]])
-	return Rx @ Ry @ Rz
+def Rmat(rpy):
+	roll, pitch, yaw = rpy
+	roll, pitch, yaw = -roll, pitch, -yaw
+	Rx = np.array([[1.0, 0.0, 0.0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]])
+	Ry = np.array([[np.cos(pitch), 0, np.sin(pitch)], [0.0, 1.0, 0.0], [-np.sin(pitch), 0, np.cos(pitch)]])
+	Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0.0, 0.0, 1.0]])
+	return Rz @ Ry @ Rx
 
 @jit(nopython=True, nogil=True)
 def reflect(N, V):

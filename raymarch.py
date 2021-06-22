@@ -15,8 +15,8 @@ def np_array_ol(x):
 			return np.copy(x)
 		return impl
 
-### params and uitls
 import distance_estimator as de
+
 from params import *
 from util import *
 
@@ -43,9 +43,9 @@ def normal_inf_ball(point):
 @jit(nopython=True, nogil=True)
 def background_color(point):
 	w = np.sum(unit(point) * np.array([-1, 1, -1]))
-	w = w / (2 * 3 / np.sqrt(3)) + 0.5
-	sky = np.array([172, 253, 240]) / 255.0
-	floor = np.array([62, 67, 218]) / 255.0
+	w = w / (2 * np.sqrt(3)) + 0.5
+	sky = np.array([172, 253, 240])
+	floor = np.array([62, 67, 218])
 	return sky * w + floor * (1 - w)
 
 @jit(nopython=True, nogil=True)
@@ -62,8 +62,7 @@ def dif(point, N, color):
 def spc(point, N, color):
 	spc_dir = unit(L_POS - point) - unit(point - CAM_POS)
 	spc_ratio = max(np.dot(N, unit(spc_dir)), 0.0)
-	spc_ratio = color * pow(spc_ratio, SPC_P)
-	return color * spc_ratio
+	return color * pow(spc_ratio, SPC_P)
 
 @jit(nopython=True, nogil=True)
 def renderColor(point, N, color, DE, steps):
@@ -71,9 +70,10 @@ def renderColor(point, N, color, DE, steps):
 	_, _, _, softShadow = march(point, unit(L_POS - point), DE, shadow=True)
 	softShadow_r = softShadow * SSH_I + (1 - SSH_I)
 
-	rendered = color * AMB_R * occ(steps)
-	rendered += dif(point, N, color) * DIF_R * intensity * softShadow_r
-	rendered += spc(point, N, color) * SPC_R * intensity * softShadow_r
+	amb_color = color * occ(steps)
+	rendered = amb_color * AMB_R
+	rendered += dif(point, N, amb_color) * DIF_R * intensity * softShadow_r
+	rendered += spc(point, N, amb_color) * SPC_R * intensity * softShadow_r
 	return rendered
 
 ### core of ray marching
@@ -101,9 +101,9 @@ def march(pixel, direction, DE, shadow=False):
 def getReflectColor(point, N, color, direction, DE, count):
 	reflect_dir = reflect(N, -direction)
 	reflect_point = point + reflect_dir * MIN_DIST * 2
-	reflect_color = rayMarching(reflect_point, reflect_dir, DE, count - 1)
+	reflect_color = rayMarching(reflect_point, reflect_dir, DE=DE, reflect_count=count-1)
 	color = (1 - REF_R) * color + REF_R * reflect_color
-	return reflect_color
+	return color
 
 ### main function
 def rayMarching(pixel, direction, DE=de.tetrahedron_with_floor, reflect_count=7):

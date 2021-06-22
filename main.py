@@ -15,6 +15,8 @@ from params import *
 def strTime(time):
 	return str(time.total_seconds()) + ' s'
 
+# def run(DE):
+
 if __name__ == '__main__':
 
 	### init multiprocessing
@@ -46,10 +48,10 @@ if __name__ == '__main__':
 	### image showing / storing
 	image = array(results).reshape(HEIGHT * RAYS_SCALE, WIDTH * RAYS_SCALE, 3)
 	image = np.float32(image)
-	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 	if RAYS_SCALE != 1:
 		image = cv2.resize(image, dsize=(WIDTH, HEIGHT))
-	# cv2.imshow('Fractal Rendering', image)
+	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+	# cv2.imshow('Fractal Rendering', image / 255.0)
 	# cv2.waitKey(0)
 	# cv2.destroyAllWindows()
-	cv2.imwrite('output.jpg', image * 255)
+	cv2.imwrite('output.jpg', image)
