@@ -5,7 +5,7 @@ from numba import jit
 
 from util import *
 
-fractal_iteration = 3
+fractal_iteration = 4
 
 @jit(nopython=True, nogil=True)
 def inf_ball(point):
@@ -88,12 +88,16 @@ def cube_with_floor(p):
 		return floor_dist, floor_color
 
 @jit(nopython=True, nogil=True)
-def distorted_cube_with_floor(p):
-	offset = 3/2
-	distorted_p = p - np.array([0,0,offset])
-	distorted_p = rotation_matrix(0, 0, -distorted_p[2]*np.pi/6) @ distorted_p
-	cube_dist, cube_color = cube(distorted_p)
+def halved_cube_with_floor(p):
+	offset = np.array([0,0,3/2])
+	knife_offset = np.array([0,0,2.0])
+	knife_normal = np.array([-1.0,-1.0,3.0])
+	knife_normal /= np.linalg.norm(knife_normal)
+	cube_dist, cube_color = cube(p - offset)
 	floor_dist, floor_color = floor(p)
+	knife_dist = np.dot(knife_normal, p - knife_offset)
+	if knife_dist > cube_dist:
+		cube_dist = knife_dist
 	if cube_dist < floor_dist:
 		return cube_dist, cube_color
 	else:
