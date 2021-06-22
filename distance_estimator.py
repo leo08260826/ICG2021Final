@@ -20,7 +20,7 @@ def inf_ball(point):
 
 @jit(nopython=True, nogil=True)
 def tetrahedron(p):
-	p = rotation_matrix(np.arctan(1/np.sqrt(2)),-np.pi/4,0).T @ p
+	p = Rmat(np.arctan(1/np.sqrt(2)),-np.pi/4,0).T @ p
 	scale = 2.0
 	reflect_normals = np.array([[1,1,0],[1,0,1],[0,1,1]]) / np.sqrt(2)
 	offset = np.array([1,1,1])
@@ -91,7 +91,7 @@ def cube_with_floor(p):
 def distorted_cube_with_floor(p):
 	offset = 3/2
 	distorted_p = p - np.array([0,0,offset])
-	distorted_p = rotation_matrix(0, 0, -distorted_p[2]*np.pi/6) @ distorted_p
+	distorted_p = Rmat(0, 0, -distorted_p[2]*np.pi/6) @ distorted_p
 	cube_dist, cube_color = cube(distorted_p)
 	floor_dist, floor_color = floor(p)
 	if cube_dist < floor_dist:

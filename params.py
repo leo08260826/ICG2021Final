@@ -17,3 +17,7 @@ AMB_R = 0.1
 DIF_R = 1.0
 SPC_R = 0.2
 SPC_P = 8.0
+
+REF_R = 0.5
+SSH_S = 16.0 # shadow softness
+SSH_I = 0.4

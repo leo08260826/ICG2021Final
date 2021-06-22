@@ -21,10 +21,6 @@ def getPixelData(width, height, rotation=I):
 	cam_pos = np.tile(CAM_POS, width * height)
 	cam_pos.resize((width * height, 3))
 
-	debug = np.full(width * height, False)
-	# debug[::WIDTH*200+240] = True
-	debug[0] = True
-
-	result = list(zip(list(cam_pos), list(directions), list(debug)))
+	result = list(zip(list(cam_pos), list(directions)))
 
 	return result
