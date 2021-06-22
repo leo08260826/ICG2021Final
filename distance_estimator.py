@@ -14,9 +14,8 @@ def np_array_ol(x):
 			return np.copy(x)
 		return impl
 
+from params import ITER
 from util import *
-
-ITER = 4
 
 @jit(nopython=True, nogil=True)
 def floor(p):

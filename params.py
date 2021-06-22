@@ -1,13 +1,14 @@
 import numpy as np
 import distance_estimator as de
 
-WIDTH = 480
-HEIGHT = 270
-RAYS_SCALE = 1 # anti-aliasing
+WIDTH = 3840
+HEIGHT = 2160
+RAYS_SCALE = 4 # anti-aliasing
 
 FRACTAL = de.tetrahedron_with_floor
-MAX_STEP = 256
+MAX_STEP = 1024
 MIN_DIST = 1 / WIDTH
+ITER = 4
 
 CAM_POS = np.array([-10.0, 0.0, 2.0])
 CAM_ANG = np.array([0.0, 0.0, 0.0])
