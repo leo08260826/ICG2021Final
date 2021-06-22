@@ -16,7 +16,7 @@ def np_array_ol(x):
 
 from util import *
 
-ITER = 3
+ITER = 4
 
 @jit(nopython=True, nogil=True)
 def floor(p):
@@ -112,6 +112,22 @@ def reflected_cube_with_floor(p):
     
 	cube_dist, cube_color = cube(reflected_p)
 	floor_dist, floor_color = floor(p)
+	if cube_dist < floor_dist:
+		return cube_dist, cube_color
+	else:
+		return floor_dist, floor_color
+
+@jit(nopython=True, nogil=True)
+def halved_cube_with_floor(p):
+	offset = np.array([0,0,3/2])
+	knife_offset = np.array([0,0,2.0])
+	knife_normal = np.array([-1.0,-1.0,3.0])
+	knife_normal /= np.linalg.norm(knife_normal)
+	cube_dist, cube_color = cube(p - offset)
+	floor_dist, floor_color = floor(p)
+	knife_dist = np.dot(knife_normal, p - knife_offset)
+	if knife_dist > cube_dist:
+		cube_dist = knife_dist
 	if cube_dist < floor_dist:
 		return cube_dist, cube_color
 	else:
