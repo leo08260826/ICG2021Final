@@ -1,9 +1,11 @@
 import numpy as np
+import distance_estimator as de
 
 WIDTH = 480
 HEIGHT = 270
 RAYS_SCALE = 1 # anti-aliasing
 
+FRACTAL = de.tetrahedron_with_floor
 MAX_STEP = 256
 MIN_DIST = 1 / WIDTH
 

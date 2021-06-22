@@ -15,8 +15,6 @@ def np_array_ol(x):
 			return np.copy(x)
 		return impl
 
-import distance_estimator as de
-
 from params import *
 from util import *
 
@@ -106,7 +104,7 @@ def getReflectColor(point, N, color, direction, DE, count):
 	return color
 
 ### main function
-def rayMarching(pixel, direction, DE=de.tetrahedron_with_floor, reflect_count=7):
+def rayMarching(pixel, direction, DE=FRACTAL, reflect_count=7):
 	steps, point, color, _ = march(pixel, direction, DE)
 
 	if steps >= (MAX_STEP - 1): return background_color(point)
